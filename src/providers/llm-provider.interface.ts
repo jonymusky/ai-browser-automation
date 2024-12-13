@@ -1,3 +1,5 @@
+import { AIAttemptContext } from '../types';
+
 export interface LLMProviderInterface {
   generateAction(
     description: string,

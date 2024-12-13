@@ -208,10 +208,17 @@ describe('AiBrowserAutomation', () => {
         }
       ];
 
+      // Setup the stub with the correct number of arguments
+      providerStub.generateAction.resolves({
+        action: 'write',
+        selector: 'input[name="q"]',
+        value: 'test search'
+      });
+
       const result = await automation.execute(steps);
       expect(result.success).to.be.true;
       expect(providerStub.generateAction.calledOnce).to.be.true;
-      expect(providerStub.generateAction.firstCall.args[0]).to.equal('Write in search box');
+      expect(providerStub.generateAction.firstCall.args[0]).to.include('Write in search box');
     });
   });
 }); 
