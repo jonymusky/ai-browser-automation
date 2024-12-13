@@ -1,5 +1,5 @@
 {
-  "name": "ai-browser-automation",
+  "name": "@jonymusky/ai-browser-automation",
   "version": "1.0.0",
   "description": "AI-powered browser automation using Selenium WebDriver",
   "main": "dist/index.js",
@@ -12,6 +12,10 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonymusky/ai-browser-automation.git"
   },
   "bugs": {
     "url": "https://github.com/jonymusky/ai-browser-automation/issues"
