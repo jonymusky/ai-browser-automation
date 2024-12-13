@@ -5,11 +5,6 @@ import * as sinon from 'sinon';
 import { OpenAIProvider } from '../providers/openai-provider';
 import { Builder, WebDriver, WebElement } from 'selenium-webdriver';
 
-// Add type for builder returns
-type BuilderReturn = {
-  build: () => Promise<WebDriver>;
-};
-
 describe('AiBrowserAutomation', function () {
   this.timeout(10000);
 
@@ -56,10 +51,23 @@ describe('AiBrowserAutomation', function () {
       wait: () => Promise.resolve()
     } as unknown as WebDriver;
 
+    // Create a builder stub that matches the Builder interface
+    const builderInstance = {
+      build: () => Promise.resolve(driverStub),
+      forBrowser: () => builderInstance,
+      withCapabilities: () => builderInstance,
+      setChromeOptions: () => builderInstance,
+      setFirefoxOptions: () => builderInstance,
+      setEdgeOptions: () => builderInstance,
+      usingServer: () => builderInstance,
+      disableEnvironmentOverrides: () => builderInstance,
+      getCapabilities: () => ({}),
+      getServerUrl: () => ''
+      // ... other required methods returning builderInstance
+    } as unknown as Builder;
+
     // Stub the Builder
-    builderStub = sinon.stub(Builder.prototype, 'forBrowser').returns({
-      build: () => Promise.resolve(driverStub)
-    } as BuilderReturn);
+    builderStub = sinon.stub(Builder.prototype, 'forBrowser').returns(builderInstance);
 
     // Create provider stub
     providerStub = sinon.createStubInstance(OpenAIProvider);
@@ -105,9 +113,21 @@ describe('AiBrowserAutomation', function () {
         getPageSource: () => Promise.resolve('<html></html>')
       } as unknown as WebDriver;
 
-      sinon.stub(Builder.prototype, 'forBrowser').returns({
-        build: () => Promise.resolve(errorDriver)
-      } as BuilderReturn);
+      // Create error builder instance
+      const errorBuilderInstance = {
+        build: () => Promise.resolve(errorDriver),
+        forBrowser: () => errorBuilderInstance,
+        withCapabilities: () => errorBuilderInstance,
+        setChromeOptions: () => errorBuilderInstance,
+        setFirefoxOptions: () => errorBuilderInstance,
+        setEdgeOptions: () => errorBuilderInstance,
+        usingServer: () => errorBuilderInstance,
+        disableEnvironmentOverrides: () => errorBuilderInstance,
+        getCapabilities: () => ({}),
+        getServerUrl: () => ''
+      } as unknown as Builder;
+
+      sinon.stub(Builder.prototype, 'forBrowser').returns(errorBuilderInstance);
 
       const errorAutomation = new AiBrowserAutomation({
         ...config,
