@@ -1,0 +1,58 @@
+{
+  "name": "ai-browser-automation",
+  "version": "1.0.0",
+  "description": "AI-powered browser automation using Selenium WebDriver",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha -r ts-node/register 'src/tests/**/*.test.ts'",
+    "example": "ts-node examples/basic-example.ts",
+    "prepare": "pnpm build",
+    "prepublishOnly": "pnpm test && pnpm build",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "lint": "eslint . --ext .ts"
+  },
+  "keywords": [
+    "automation",
+    "selenium",
+    "ai",
+    "browser",
+    "testing"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "dependencies": {
+    "selenium-webdriver": "^4.10.0",
+    "openai": "^4.0.0",
+    "node-fetch": "^2.6.1",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.5",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^18.17.0",
+    "@types/dotenv": "^8.2.0",
+    "@types/selenium-webdriver": "^4.1.15",
+    "@types/sinon": "^10.0.15",
+    "@types/node-fetch": "^2.6.4",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
+    "sinon": "^15.2.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6",
+    "rimraf": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  }
+} 
