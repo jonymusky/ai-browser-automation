@@ -10,7 +10,8 @@
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
   },
   "bugs": {
     "url": "https://github.com/jonymusky/ai-browser-automation/issues"
