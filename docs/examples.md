@@ -7,7 +7,8 @@ This document shows detailed examples of how to use the AI Browser Automation pa
 This example demonstrates how to automate a Google search using AI assistance.
 
 ### Code
-Link to code
+[Link to code
+](https://github.com/jonymusky/ai-browser-automation/blob/main/examples/google-example.ts)
 
 ### Execution Output
 ```bash
