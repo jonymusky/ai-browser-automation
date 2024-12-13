@@ -14,5 +14,6 @@ export interface LLMProviderInterface {
     action: string;
     selector?: string;
     value?: string;
+    timeout?: number;
   }>;
 }

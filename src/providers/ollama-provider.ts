@@ -13,8 +13,8 @@ export class OllamaProvider implements LLMProviderInterface {
 
   async generateAction(
     description: string,
-    _pageContent: string,
-    _visibleElements: Array<{
+    pageContent: string,
+    visibleElements: Array<{
       tag: string;
       text: string;
       attributes: Record<string, string>;
@@ -26,6 +26,15 @@ export class OllamaProvider implements LLMProviderInterface {
     value?: string;
   }> {
     console.log('Generating action for prompt:', description);
+
+    const enhancedPrompt = `
+      Context: ${context ? JSON.stringify(context) : 'No context provided'}
+      Page Content Length: ${pageContent.length}
+      Visible Elements: ${visibleElements.length}
+      
+      Task: ${description}
+      ...
+    `;
 
     const response = await fetch(`${this.baseUrl}/api/generate`, {
       method: 'POST',
@@ -46,7 +55,7 @@ RULES:
   "value": "OpenAI"
 }
 
-TASK: ${description}
+${enhancedPrompt}
 
 AVAILABLE ACTIONS:
 - write: Write text into an input field
@@ -96,7 +105,12 @@ YOUR RESPONSE (JSON only):`,
     }
   }
 
-  private getFallbackAction(prompt: string): any {
+  private getFallbackAction(prompt: string): {
+    action: string;
+    selector?: string;
+    value?: string;
+    timeout?: number;
+  } {
     console.log('Using fallback action for prompt:', prompt);
     // Para búsqueda en Google
     if (prompt.toLowerCase().includes('search') || prompt.toLowerCase().includes('write')) {

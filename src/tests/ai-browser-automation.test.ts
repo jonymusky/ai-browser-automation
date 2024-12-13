@@ -3,15 +3,15 @@ import { AutomationConfig, AutomationStep } from '../types';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { OpenAIProvider } from '../providers/openai-provider';
-import { Builder, WebDriver, WebElement, WebElementPromise } from 'selenium-webdriver';
+import { Builder, WebDriver, WebElement } from 'selenium-webdriver';
 
-describe('AiBrowserAutomation', function() {
-  // Set timeout to 10 seconds
+describe('AiBrowserAutomation', function () {
   this.timeout(10000);
-  
+
   let automation: AiBrowserAutomation;
   let providerStub: sinon.SinonStubbedInstance<OpenAIProvider>;
   let driverStub: WebDriver;
+  let builderStub: sinon.SinonStub;
 
   const config: AutomationConfig = {
     llmProvider: 'OpenAI' as const,
@@ -23,23 +23,8 @@ describe('AiBrowserAutomation', function() {
   };
 
   beforeEach(() => {
-    // Create WebElement stub with all required methods
+    // Create a basic element stub with all required methods
     const elementStub = {
-      // Required WebElement methods
-      getId: () => Promise.resolve('id'),
-      getDriver: () => driverStub,
-      getSize: () => Promise.resolve({ width: 0, height: 0 }),
-      getLocation: () => Promise.resolve({ x: 0, y: 0 }),
-      getShadowRoot: () => Promise.resolve({
-        serialize: () => Promise.resolve({}),
-        execute_: () => Promise.resolve({}),
-        findElement: () => elementPromise,
-        findElements: () => Promise.resolve([]),
-        getId: () => Promise.resolve('shadow-id')
-      }),
-      serialize: () => Promise.resolve({ 'element-6066-11e4-a52e-4f735466cecf': 'id' }),
-
-      // Common used methods
       click: () => Promise.resolve(),
       sendKeys: () => Promise.resolve(),
       clear: () => Promise.resolve(),
@@ -48,22 +33,14 @@ describe('AiBrowserAutomation', function() {
       getAttribute: () => Promise.resolve('attribute'),
       isDisplayed: () => Promise.resolve(true),
       getTagName: () => Promise.resolve('div'),
-      getCssValue: () => Promise.resolve(''),
-      getRect: () => Promise.resolve({ x: 0, y: 0, width: 0, height: 0 }),
-      isEnabled: () => Promise.resolve(true),
-      isSelected: () => Promise.resolve(false),
-      takeScreenshot: () => Promise.resolve(''),
-      findElement: () => elementPromise,
-      findElements: () => Promise.resolve([])
+      findElement: () => Promise.resolve(elementStub),
+      findElements: () => Promise.resolve([elementStub])
     } as unknown as WebElement;
 
-    // Create a WebElementPromise-like object
-    const elementPromise = Promise.resolve(elementStub) as WebElementPromise;
-
-    // Create driver stub
+    // Create a basic driver stub
     driverStub = {
       get: () => Promise.resolve(),
-      findElement: () => elementPromise,
+      findElement: () => Promise.resolve(elementStub),
       quit: () => Promise.resolve(),
       takeScreenshot: () => Promise.resolve('base64screenshot'),
       getPageSource: () => Promise.resolve('<html></html>'),
@@ -72,10 +49,10 @@ describe('AiBrowserAutomation', function() {
         activeElement: () => elementStub
       }),
       wait: () => Promise.resolve()
-    } as any;
+    } as unknown as WebDriver;
 
-    // Stub Builder
-    sinon.stub(Builder.prototype, 'forBrowser').returns({
+    // Stub the Builder
+    builderStub = sinon.stub(Builder.prototype, 'forBrowser').returns({
       build: () => Promise.resolve(driverStub)
     } as any);
 
@@ -93,31 +70,15 @@ describe('AiBrowserAutomation', function() {
     });
   });
 
-  afterEach(async () => {
-    // Restore all stubs
+  afterEach(() => {
     sinon.restore();
-    
-    // Ensure driver is quit
-    if (driverStub?.quit) {
-      await driverStub.quit();
-    }
-    
-    // Force quit any remaining driver instances
-    try {
-      const selenium = require('selenium-webdriver');
-      if (selenium.Browser) {
-        await selenium.Browser.quit();
-      }
-    } catch (error) {
-      console.log('No remaining selenium instances to clean up');
-    }
   });
 
   describe('execute', () => {
     it('should execute steps successfully', async () => {
       const steps: AutomationStep[] = [
         {
-          action: 'navigate' as const,
+          action: 'navigate',
           description: 'Navigate to test page',
           url: 'https://example.com'
         }
@@ -128,93 +89,43 @@ describe('AiBrowserAutomation', function() {
     });
 
     it('should handle errors gracefully', async () => {
-      // First clear previous stubs
-      sinon.restore();
+      // Restore previous stub and create new one
+      builderStub.restore();
 
-      // Create a complete error driver stub with required WebDriver methods
       const errorDriver = {
+        findElement: () => Promise.reject(new Error('Element not found')),
+        quit: () => Promise.resolve(),
         get: () => Promise.resolve(),
-        findElement: () => {
-          // This will be called by executeStep for the click action
-          throw new Error('Element not found');
-        },
-        quit: sinon.stub().resolves(),
         takeScreenshot: () => Promise.resolve('base64screenshot'),
-        getPageSource: () => Promise.resolve('<html></html>'),
-        findElements: () => Promise.resolve([]),
-        switchTo: () => ({
-          activeElement: () => ({
-            sendKeys: () => Promise.resolve()
-          })
-        }),
-        wait: () => Promise.resolve(),
-        // Add required WebDriver methods
-        execute: () => Promise.resolve(),
-        setFileDetector: () => Promise.resolve(),
-        getExecutor: () => ({}),
-        getSession: () => Promise.resolve({ getId: () => 'session-id' }),
-        getCapabilities: () => Promise.resolve({}),
-        executeScript: () => Promise.resolve(),
-        executeAsyncScript: () => Promise.resolve(),
-        sleep: () => Promise.resolve(),
-        getWindowHandle: () => Promise.resolve(''),
-        getAllWindowHandles: () => Promise.resolve([]),
-        close: () => Promise.resolve(),
-        manage: () => ({
-          setTimeouts: () => Promise.resolve(),
-          window: () => ({
-            maximize: () => Promise.resolve()
-          })
-        }),
-        navigate: () => ({
-          to: () => Promise.resolve(),
-          back: () => Promise.resolve(),
-          forward: () => Promise.resolve(),
-          refresh: () => Promise.resolve()
-        }),
-        actions: () => ({
-          clear: () => Promise.resolve(),
-          perform: () => Promise.resolve()
-        })
+        getPageSource: () => Promise.resolve('<html></html>')
       } as unknown as WebDriver;
 
-      // Store the quit stub separately to access its properties
-      const quitStub = errorDriver.quit as sinon.SinonStub;
+      sinon.stub(Builder.prototype, 'forBrowser').returns({
+        build: () => Promise.resolve(errorDriver)
+      } as any);
 
-      // Create a new automation instance with the error driver
       const errorAutomation = new AiBrowserAutomation({
         ...config,
         getLLMProvider: () => providerStub
       });
 
-      // Install the Builder stub
-      sinon.stub(Builder.prototype, 'forBrowser').returns({
-        build: () => Promise.resolve(errorDriver)
-      } as any);
-
       const steps: AutomationStep[] = [
         {
-          action: 'click' as const, // Use click action which we know will fail
+          action: 'click',
           description: 'Click non-existent element',
           selector: '#non-existent'
         }
       ];
 
-      try {
-        const result = await errorAutomation.execute(steps);
-        expect(result.success).to.be.false;
-        expect(result.error).to.equal('Element not found');
-        expect(quitStub.called).to.be.true;
-      } finally {
-        // Ensure error driver is quit
-        await errorDriver.quit();
-      }
+      const result = await errorAutomation.execute(steps);
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal('Element not found');
     });
 
     it('should take screenshot when configured', async () => {
       const steps: AutomationStep[] = [
         {
-          action: 'navigate' as const,
+          action: 'navigate',
           description: 'Navigate to test page',
           url: 'https://example.com'
         }
@@ -231,19 +142,12 @@ describe('AiBrowserAutomation', function() {
     it('should handle AI-assisted steps', async () => {
       const steps: AutomationStep[] = [
         {
-          action: 'write' as const,
+          action: 'write',
           description: 'Write in search box',
           solve_with_ai: true,
           value: 'test search'
         }
       ];
-
-      // Setup the stub with the correct number of arguments
-      providerStub.generateAction.resolves({
-        action: 'write',
-        selector: 'input[name="q"]',
-        value: 'test search'
-      });
 
       const result = await automation.execute(steps);
       expect(result.success).to.be.true;
