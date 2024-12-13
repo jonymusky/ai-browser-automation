@@ -20,7 +20,10 @@
     "prepublishOnly": "pnpm test && pnpm build",
     "dev": "tsc --watch",
     "clean": "rimraf dist",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts --ignore-path .eslintignore",
+    "lint:fix": "eslint . --ext .ts --fix --ignore-path .eslintignore",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "run-example": "ts-node -r dotenv/config scripts/run-example.ts"
   },
   "keywords": [
     "automation",

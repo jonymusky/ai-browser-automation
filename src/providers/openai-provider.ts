@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { LLMProviderInterface } from './llm-provider.interface';
+import { AIAttemptContext } from '../types';
 
 export class OpenAIProvider implements LLMProviderInterface {
   private openai: OpenAI;
@@ -8,7 +9,21 @@ export class OpenAIProvider implements LLMProviderInterface {
     this.openai = new OpenAI({ apiKey });
   }
 
-  async generateAction(prompt: string, pageContent: string, visibleElements: any[]) {
+  async generateAction(
+    description: string,
+    pageContent: string,
+    visibleElements: Array<{
+      tag: string;
+      text: string;
+      attributes: Record<string, string>;
+    }>,
+    context?: AIAttemptContext
+  ): Promise<{
+    action: string;
+    selector?: string;
+    value?: string;
+    timeout?: number;
+  }> {
     const response = await this.openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
@@ -20,7 +35,7 @@ export class OpenAIProvider implements LLMProviderInterface {
         {
           role: 'user',
           content: `
-            Task: ${prompt}
+            Task: ${description}
             
             Page Content: ${pageContent}
             

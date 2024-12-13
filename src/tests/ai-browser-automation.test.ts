@@ -5,6 +5,11 @@ import * as sinon from 'sinon';
 import { OpenAIProvider } from '../providers/openai-provider';
 import { Builder, WebDriver, WebElement } from 'selenium-webdriver';
 
+// Add type for builder returns
+type BuilderReturn = {
+  build: () => Promise<WebDriver>;
+};
+
 describe('AiBrowserAutomation', function () {
   this.timeout(10000);
 
@@ -54,7 +59,7 @@ describe('AiBrowserAutomation', function () {
     // Stub the Builder
     builderStub = sinon.stub(Builder.prototype, 'forBrowser').returns({
       build: () => Promise.resolve(driverStub)
-    } as any);
+    } as BuilderReturn);
 
     // Create provider stub
     providerStub = sinon.createStubInstance(OpenAIProvider);
@@ -102,7 +107,7 @@ describe('AiBrowserAutomation', function () {
 
       sinon.stub(Builder.prototype, 'forBrowser').returns({
         build: () => Promise.resolve(errorDriver)
-      } as any);
+      } as BuilderReturn);
 
       const errorAutomation = new AiBrowserAutomation({
         ...config,
