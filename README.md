@@ -1,8 +1,9 @@
 # AI Browser Automation
 
-+ ![Tests](https://github.com/jonymusky/ai-browser-automation/workflows/Tests/badge.svg)
-+ ![Lint](https://github.com/jonymusky/ai-browser-automation/workflows/Lint/badge.svg)
-  
+![Tests](https://github.com/jonymusky/ai-browser-automation/workflows/Tests/badge.svg)
+![Lint](https://github.com/jonymusky/ai-browser-automation/workflows/Lint/badge.svg)
+![npm version](https://img.shields.io/npm/v/ai-browser-automation.svg)
+
 
 A TypeScript package that combines Selenium WebDriver with AI capabilities for intelligent browser automation.
 

@@ -12,6 +12,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "bugs": {
+    "url": "https://github.com/jonymusky/ai-browser-automation/issues"
+  },
+  "homepage": "https://github.com/jonymusky/ai-browser-automation#readme",  
   "scripts": {
     "build": "tsc",
     "test": "mocha -r ts-node/register 'src/tests/**/*.test.ts'",
@@ -22,8 +26,7 @@
     "clean": "rimraf dist",
     "lint": "eslint . --ext .ts --ignore-path .eslintignore",
     "lint:fix": "eslint . --ext .ts --fix --ignore-path .eslintignore",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "run-example": "ts-node -r dotenv/config scripts/run-example.ts"
+    "format": "prettier --write \"src/**/*.ts\""
   },
   "keywords": [
     "automation",
