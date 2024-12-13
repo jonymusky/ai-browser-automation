@@ -29,14 +29,12 @@ async function runExample() {
       description: 'Search for "OpenAI"',
       solve_with_ai: true,
       // Fallback selector si el AI falla
-      selector: 'textarea[aria-label="Buscar"], input[name="q"]',
       value: 'OpenAI'
     },
     {
       action: 'submit' as const,
       description: 'Submit the search',
       solve_with_ai: true,
-      selector: 'form[action="/search"], form[role="search"]'
     },
     {
       action: 'wait' as const,
@@ -48,7 +46,7 @@ async function runExample() {
 
   try {
     const result = await automation.execute(steps, {
-      screenshotName: 'google-search-openai'
+      screenshotName: `google-search-${config.llmProvider}`
     });
     console.log('Automation completed:', result);
   } catch (error) {

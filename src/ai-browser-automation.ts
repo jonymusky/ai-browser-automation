@@ -1,5 +1,5 @@
 import { Builder, By, until, WebDriver, Key } from 'selenium-webdriver';
-import { AutomationConfig, AutomationStep, AutomationResult, ExecutionConfig } from './types';
+import { AutomationConfig, AutomationStep, AutomationResult, ExecutionConfig, AIAttemptContext } from './types';
 import { getLLMProvider } from './utils';
 import { LLMProviderInterface } from './providers/llm-provider.interface';
 import * as fs from 'fs';
@@ -33,16 +33,7 @@ export class AiBrowserAutomation {
       for (const step of steps) {
         try {
           if (step.solve_with_ai) {
-            const pageContent = await this.driver.getPageSource();
-            const visibleElements = await this.getVisibleElements();
-            
-            const aiAction = await this.llmProvider.generateAction(
-              step.description,
-              pageContent,
-              visibleElements
-            );
-            
-            Object.assign(step, aiAction);
+            await this.executeStepWithAI(step);
           }
           
           await this.executeStep(step);
@@ -188,5 +179,90 @@ export class AiBrowserAutomation {
     
     fs.writeFileSync(filepath, screenshot, 'base64');
     return filepath;
+  }
+
+  private async executeStepWithAI(step: AutomationStep): Promise<void> {
+    const maxAttempts = this.config.maxAiAttempts || 5;
+    const retryDelay = this.config.aiRetryDelay || 1000;
+    const attemptTimeout = 15000;
+
+    const context: AIAttemptContext = {
+      previousAttempts: [],
+      visibleElements: [],
+      searchStrategies: [
+        { type: 'text', value: 'Menor precio' },
+        { type: 'aria-label', value: 'Ordenar por menor precio' },
+        { type: 'title', value: 'Ordenar por precio más bajo' },
+        { type: 'class', contains: 'sort-price' },
+        { type: 'data-testid', contains: 'sort-price' }
+      ]
+    };
+
+    // Enhance the description with search strategies
+    const getEnhancedDescription = () => `
+      ${step.description}
+      Search strategies:
+      - Look for elements with exact text matching
+      - Look for elements with aria-label attributes
+      - Look for elements with title attributes
+      - Look for elements with placeholder text
+      - Look for elements with class names containing relevant keywords
+      - Look for elements with data-testid attributes
+      Previous failed attempts: ${JSON.stringify(context.previousAttempts)}
+    `;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      console.log(`AI Attempt ${attempt}/${maxAttempts} for: ${step.description}`);
+      
+      try {
+        const pageContent = await this.driver.getPageSource();
+        context.visibleElements = await this.getVisibleElements();
+        
+        console.log('Previous attempts:', context.previousAttempts);
+        
+        const aiAction = await Promise.race([
+          this.llmProvider.generateAction(
+            getEnhancedDescription(),  // Get fresh description with updated context
+            pageContent,
+            context.visibleElements,
+            context
+          ),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('AI generation timeout')), attemptTimeout)
+          )
+        ]);
+        
+        console.log('AI suggested action:', aiAction);
+        
+        await Promise.race([
+          (async () => {
+            Object.assign(step, aiAction);
+            await this.executeStep(step);
+          })(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Action execution timeout')), attemptTimeout)
+          )
+        ]);
+
+        console.log('Step executed successfully');
+        return;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Attempt ${attempt} failed:`, errorMessage);
+        
+        context.previousAttempts.push({
+          selector: step.selector || '',
+          error: errorMessage
+        });
+        
+        if (attempt === maxAttempts) {
+          console.error('All attempts exhausted');
+          throw new Error(`Failed after ${maxAttempts} attempts: ${errorMessage}`);
+        }
+        
+        console.log(`Waiting ${retryDelay}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
   }
 } 

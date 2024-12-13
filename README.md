@@ -53,3 +53,15 @@ const steps = [
 
 const result = await automation.execute(steps);
 ```
+
+## Examples
+
+For detailed examples with screenshots and execution outputs, see our [Examples Documentation](docs/examples.md).
+
+## Running an example
+
+You can find example scripts in the `examples` directory. To run a specific example:
+
+```bash
+pnpm run-example google
+```
