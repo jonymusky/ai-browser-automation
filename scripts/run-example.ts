@@ -18,4 +18,4 @@ async function runExample() {
   }
 }
 
-runExample(); 
+runExample();

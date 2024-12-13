@@ -10,14 +10,15 @@ export class OpenAIProvider implements LLMProviderInterface {
 
   async generateAction(prompt: string, pageContent: string, visibleElements: any[]) {
     const response = await this.openai.chat.completions.create({
-      model: "gpt-4",
+      model: 'gpt-4',
       messages: [
         {
-          role: "system",
-          content: "You are a browser automation assistant. Based on the description and page content, determine the appropriate action to take."
+          role: 'system',
+          content:
+            'You are a browser automation assistant. Based on the description and page content, determine the appropriate action to take.'
         },
         {
-          role: "user",
+          role: 'user',
           content: `
             Task: ${prompt}
             
@@ -38,4 +39,4 @@ export class OpenAIProvider implements LLMProviderInterface {
 
     return JSON.parse(response.choices[0].message.content || '{}');
   }
-} 
+}

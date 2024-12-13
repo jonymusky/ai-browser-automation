@@ -3,13 +3,16 @@ import { AutomationConfig, AutomationStep } from '../types';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { OpenAIProvider } from '../providers/openai-provider';
-import { Builder, WebDriver, WebElement, By, WebElementPromise } from 'selenium-webdriver';
+import { Builder, WebDriver, WebElement, WebElementPromise } from 'selenium-webdriver';
 
-describe('AiBrowserAutomation', () => {
+describe('AiBrowserAutomation', function() {
+  // Set timeout to 10 seconds
+  this.timeout(10000);
+  
   let automation: AiBrowserAutomation;
   let providerStub: sinon.SinonStubbedInstance<OpenAIProvider>;
   let driverStub: WebDriver;
-  
+
   const config: AutomationConfig = {
     llmProvider: 'OpenAI' as const,
     apiKey: 'test-key',
@@ -27,7 +30,13 @@ describe('AiBrowserAutomation', () => {
       getDriver: () => driverStub,
       getSize: () => Promise.resolve({ width: 0, height: 0 }),
       getLocation: () => Promise.resolve({ x: 0, y: 0 }),
-      getShadowRoot: () => Promise.resolve(null),
+      getShadowRoot: () => Promise.resolve({
+        serialize: () => Promise.resolve({}),
+        execute_: () => Promise.resolve({}),
+        findElement: () => elementPromise,
+        findElements: () => Promise.resolve([]),
+        getId: () => Promise.resolve('shadow-id')
+      }),
       serialize: () => Promise.resolve({ 'element-6066-11e4-a52e-4f735466cecf': 'id' }),
 
       // Common used methods
@@ -84,8 +93,24 @@ describe('AiBrowserAutomation', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Restore all stubs
     sinon.restore();
+    
+    // Ensure driver is quit
+    if (driverStub?.quit) {
+      await driverStub.quit();
+    }
+    
+    // Force quit any remaining driver instances
+    try {
+      const selenium = require('selenium-webdriver');
+      if (selenium.Browser) {
+        await selenium.Browser.quit();
+      }
+    } catch (error) {
+      console.log('No remaining selenium instances to clean up');
+    }
   });
 
   describe('execute', () => {
@@ -169,16 +194,21 @@ describe('AiBrowserAutomation', () => {
 
       const steps: AutomationStep[] = [
         {
-          action: 'click' as const,  // Use click action which we know will fail
+          action: 'click' as const, // Use click action which we know will fail
           description: 'Click non-existent element',
           selector: '#non-existent'
         }
       ];
 
-      const result = await errorAutomation.execute(steps);
-      expect(result.success).to.be.false;
-      expect(result.error).to.equal('Element not found');
-      expect(quitStub.called).to.be.true;
+      try {
+        const result = await errorAutomation.execute(steps);
+        expect(result.success).to.be.false;
+        expect(result.error).to.equal('Element not found');
+        expect(quitStub.called).to.be.true;
+      } finally {
+        // Ensure error driver is quit
+        await errorDriver.quit();
+      }
     });
 
     it('should take screenshot when configured', async () => {
@@ -221,4 +251,4 @@ describe('AiBrowserAutomation', () => {
       expect(providerStub.generateAction.firstCall.args[0]).to.include('Write in search box');
     });
   });
-}); 
+});

@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { LLMProviderInterface } from './llm-provider.interface';
+import { AIAttemptContext } from '../types';
 
 export class OllamaProvider implements LLMProviderInterface {
   private baseUrl: string;
@@ -10,13 +11,26 @@ export class OllamaProvider implements LLMProviderInterface {
     this.model = config.ollamaModel || 'llama2';
   }
 
-  async generateAction(prompt: string, pageContent: string, visibleElements: any[]) {
-    console.log('Generating action for prompt:', prompt);
-    
+  async generateAction(
+    description: string,
+    _pageContent: string,
+    _visibleElements: Array<{
+      tag: string;
+      text: string;
+      attributes: Record<string, string>;
+    }>,
+    context?: AIAttemptContext
+  ): Promise<{
+    action: string;
+    selector?: string;
+    value?: string;
+  }> {
+    console.log('Generating action for prompt:', description);
+
     const response = await fetch(`${this.baseUrl}/api/generate`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         model: this.model,
@@ -32,7 +46,7 @@ RULES:
   "value": "OpenAI"
 }
 
-TASK: ${prompt}
+TASK: ${description}
 
 AVAILABLE ACTIONS:
 - write: Write text into an input field
@@ -45,37 +59,40 @@ Example response:
 
 YOUR RESPONSE (JSON only):`,
         stream: false,
-        temperature: 0.1  // Reducir la temperatura para respuestas más consistentes
-      }),
+        temperature: 0.1 // Reducir la temperatura para respuestas más consistentes
+      })
     });
 
     const data = await response.json();
     console.log('Raw Ollama response:', data.response);
-    
+
     try {
       // Buscar el primer objeto JSON válido en la respuesta
       const jsonMatch = data.response.match(/\{[^]*\}/);
       if (!jsonMatch) {
         console.log('No JSON found in response, using fallback');
-        return this.getFallbackAction(prompt);
+        return this.getFallbackAction(description);
       }
 
       const cleanedResponse = jsonMatch[0];
       console.log('Cleaned response:', cleanedResponse);
-      
+
       const parsedResponse = JSON.parse(cleanedResponse);
       console.log('Parsed response:', parsedResponse);
-      
+
       // Validar que la respuesta tiene los campos necesarios
-      if (!parsedResponse.selector && ['write', 'click', 'submit'].includes(parsedResponse.action)) {
+      if (
+        !parsedResponse.selector &&
+        ['write', 'click', 'submit'].includes(parsedResponse.action)
+      ) {
         console.log('Missing selector, falling back to default action');
-        return this.getFallbackAction(prompt);
+        return this.getFallbackAction(description);
       }
-      
+
       return parsedResponse;
     } catch (error) {
       console.error('Failed to parse Ollama response:', error);
-      return this.getFallbackAction(prompt);
+      return this.getFallbackAction(description);
     }
   }
 
@@ -100,4 +117,4 @@ YOUR RESPONSE (JSON only):`,
       timeout: 1000
     };
   }
-} 
+}

@@ -17,7 +17,15 @@ export interface AutomationConfig {
 }
 
 export interface AutomationStep {
-  action: 'navigate' | 'click' | 'write' | 'submit' | 'wait' | 'scroll' | 'navigate_page' | 'extract';
+  action:
+    | 'navigate'
+    | 'click'
+    | 'write'
+    | 'submit'
+    | 'wait'
+    | 'scroll'
+    | 'navigate_page'
+    | 'extract';
   description: string;
   solve_with_ai?: boolean;
   selector?: string;
@@ -28,7 +36,7 @@ export interface AutomationStep {
 
 export interface AutomationResult {
   success: boolean;
-  data?: any;
+  data?: unknown;
   screenshot?: string;
   error?: string;
 }
@@ -53,4 +61,4 @@ export interface AIAttemptContext {
     value?: string;
     contains?: string;
   }>;
-} 
+}

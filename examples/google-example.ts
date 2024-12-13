@@ -9,7 +9,7 @@ async function runExample() {
   const config: AutomationConfig = {
     llmProvider: 'Ollama' as const,
     screenshotOnComplete: true,
-    browser: process.env.BROWSER as 'chrome' | 'firefox' | 'safari' || 'chrome',
+    browser: (process.env.BROWSER as 'chrome' | 'firefox' | 'safari') || 'chrome',
     headless: process.env.HEADLESS === 'true',
     screenshotPath: process.env.SCREENSHOT_PATH,
     ollamaBaseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
@@ -34,13 +34,13 @@ async function runExample() {
     {
       action: 'submit' as const,
       description: 'Submit the search',
-      solve_with_ai: true,
+      solve_with_ai: true
     },
     {
       action: 'wait' as const,
       description: 'Wait for search results to load',
-      selector: '#search',  
-      timeout: 10000  
+      selector: '#search',
+      timeout: 10000
     }
   ];
 
@@ -57,4 +57,4 @@ async function runExample() {
   }
 }
 
-runExample(); 
+runExample();
