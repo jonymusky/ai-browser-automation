@@ -1,6 +1,6 @@
 import { LLMProviderInterface } from '../providers/llm-provider.interface';
 
-export type LLMProvider = 'OpenAI' | 'Ollama';
+export type LLMProvider = 'OpenAI' | 'Ollama' | 'Grok';
 
 export interface AutomationConfig {
   llmProvider: LLMProvider;
@@ -11,6 +11,7 @@ export interface AutomationConfig {
   screenshotPath?: string;
   ollamaBaseUrl?: string;
   ollamaModel?: string;
+  grokModel?: string;
   getLLMProvider?: (config: AutomationConfig) => LLMProviderInterface;
   maxAiAttempts?: number;
   aiRetryDelay?: number;

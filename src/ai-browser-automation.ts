@@ -153,21 +153,91 @@ export class AiBrowserAutomation {
   }
 
   private async getVisibleElements() {
-    const elements = await this.driver.findElements(By.css('*'));
-    const visibleElements = [];
+    const interactiveSelectors = [
+      'a',
+      'button',
+      'input',
+      'textarea',
+      'select',
+      '[role="button"]',
+      '[role="link"]',
+      '[role="menuitem"]',
+      '[role="tab"]',
+      '[role="checkbox"]',
+      '[role="radio"]',
+      '[role="switch"]',
+      '[role="searchbox"]',
+      '[role="textbox"]',
+      '[tabindex]:not([tabindex="-1"])',
+      'label',
+      'form',
+      '[onclick]',
+      '[class*="btn"]',
+      '[class*="button"]',
+      '[class*="link"]',
+      '[id*="cookie"]',
+      '[class*="cookie"]',
+      '[id*="consent"]',
+      '[class*="consent"]',
+      '[aria-label*="cookie"]',
+      '[aria-label*="consent"]'
+    ].join(',');
 
-    for (const element of elements) {
-      if (await element.isDisplayed()) {
-        const outerHTML = await element.getAttribute('outerHTML');
-        visibleElements.push({
-          tag: await element.getTagName(),
-          text: await element.getText(),
-          attributes: this.parseAttributes(outerHTML)
-        });
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
+      try {
+        const elements = await this.driver.findElements(By.css(interactiveSelectors));
+        const visibleElements = await Promise.all(
+          elements.map(async (element) => {
+            try {
+              // Wait for the element to be visible
+              await this.driver.wait(until.elementIsVisible(element), 1000);
+
+              const [outerHTML, isEnabled, tagName, text] = await Promise.all([
+                element.getAttribute('outerHTML'),
+                element.isEnabled(),
+                element.getTagName(),
+                element.getText()
+              ]);
+
+              const attributes = this.parseAttributes(outerHTML);
+              const location = await element.getRect();
+
+              return {
+                tag: tagName,
+                text: text.slice(0, 100),
+                attributes,
+                isEnabled,
+                isClickable:
+                  (isEnabled && ['a', 'button'].includes(tagName)) ||
+                  attributes.role === 'button' ||
+                  attributes.onclick !== undefined,
+                location,
+                role: attributes.role || tagName
+              };
+            } catch (elementError) {
+              // Return null for elements that fail
+              return null;
+            }
+          })
+        );
+
+        // Filter out null elements and sort by vertical position
+        return visibleElements
+          .filter((el) => el !== null)
+          .sort((a, b) => (a.location?.y || 0) - (b.location?.y || 0));
+      } catch (error) {
+        retryCount++;
+        if (retryCount === maxRetries) {
+          console.error('Failed to get visible elements after max retries');
+          return [];
+        }
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
-
-    return visibleElements;
+    return [];
   }
 
   private async takeScreenshot(customName?: string): Promise<string> {
@@ -186,7 +256,7 @@ export class AiBrowserAutomation {
 
   private async executeStepWithAI(step: AutomationStep): Promise<void> {
     const maxAttempts = this.config.maxAiAttempts || 5;
-    const retryDelay = this.config.aiRetryDelay || 1000;
+    const retryDelay = this.config.aiRetryDelay || 500;
     const attemptTimeout = 15000;
 
     const context: AIAttemptContext = {
@@ -201,16 +271,14 @@ export class AiBrowserAutomation {
       ]
     };
 
-    // Enhance the description with search strategies
+    // Enhanced description for cookie consent
     const getEnhancedDescription = () => `
       ${step.description}
-      Search strategies:
-      - Look for elements with exact text matching
-      - Look for elements with aria-label attributes
-      - Look for elements with title attributes
-      - Look for elements with placeholder text
-      - Look for elements with class names containing relevant keywords
-      - Look for elements with data-testid attributes
+      Search strategies for cookie consent:
+      - Look for buttons with text like "Accept", "Allow", "I Accept"
+      - Look for elements with cookie-related IDs or classes
+      - Look for elements with cookie-related aria labels
+      - Look for elements within cookie consent modals or banners
       Previous failed attempts: ${JSON.stringify(context.previousAttempts)}
     `;
 
@@ -218,14 +286,16 @@ export class AiBrowserAutomation {
       console.log(`AI Attempt ${attempt}/${maxAttempts} for: ${step.description}`);
 
       try {
+        // Wait for page to stabilize
         const pageContent = await this.driver.getPageSource();
+
         context.visibleElements = await this.getVisibleElements();
 
         console.log('Previous attempts:', context.previousAttempts);
 
         const aiAction = await Promise.race([
           this.llmProvider.generateAction(
-            getEnhancedDescription(), // Get fresh description with updated context
+            getEnhancedDescription(),
             pageContent,
             context.visibleElements,
             context
@@ -252,6 +322,7 @@ export class AiBrowserAutomation {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`Attempt ${attempt} failed:`, errorMessage);
+        console.error('Error details:', error);
 
         context.previousAttempts.push({
           selector: step.selector || '',
