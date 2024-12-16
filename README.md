@@ -11,11 +11,13 @@ A TypeScript package that combines Selenium WebDriver with AI capabilities for i
 
 This package provides an easy way to automate browser interactions using AI capabilities. It supports multiple LLM providers (OpenAI, Ollama) and can automatically detect and interact with web elements.
 
+For a detailed list of changes and versions, see our [Changelog](CHANGELOG.md).
+
 ## Features
 
 - Selenium-based browser automation
 - AI-powered element detection and interaction
-- Support for multiple LLM providers (OpenAI, Ollama)
+- Support for multiple LLM providers (OpenAI, Ollama, Grok)
 - Screenshot capture capability
 - Flexible step-based automation configuration
 
