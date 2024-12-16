@@ -1,5 +1,5 @@
 {
-  "name": "@jonymusky/ai-browser-automation",
+  "name": "ai-browser-automation",
   "version": "1.1.5",
   "description": "AI-powered browser automation using Selenium WebDriver",
   "main": "dist/index.js",
