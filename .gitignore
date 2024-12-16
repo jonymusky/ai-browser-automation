@@ -38,3 +38,5 @@ coverage/
 screenshots/
 test-screenshots/ 
 .npmrc
+
+scripts/publish-multi.js
